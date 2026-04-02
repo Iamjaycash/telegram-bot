@@ -1,25 +1,12 @@
 import os
-import threading
-from flask import Flask
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import json
 
-# Flask app to keep Render happy
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot is running!"
-
-@app.route('/health')
-def health():
-    return "OK"
-
 TOKEN = os.environ.get("BOT_TOKEN")
 
 if not TOKEN:
-    print("ERROR: BOT_TOKEN environment variable not set!")
+    print("ERROR: BOT_TOKEN not set!")
     exit(1)
 
 DATA_FILE = "users.json"
@@ -95,20 +82,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f"\n📩 Message from {user_id}: {msg}\n")
     await update.message.reply_text("✅ Message received. Admin will reply soon.")
 
-def run_bot():
-    bot_app = Application.builder().token(TOKEN).build()
-    bot_app.add_handler(CommandHandler("start", start))
-    bot_app.add_handler(CommandHandler("earnings", earnings))
-    bot_app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
-    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+def main():
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("earnings", earnings))
+    app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     print("🤖 Bot is running...")
-    bot_app.run_polling()
+    app.run_polling()
 
 if __name__ == "__main__":
-    # Run bot in background thread
-    bot_thread = threading.Thread(target=run_bot)
-    bot_thread.start()
-    
-    # Run Flask on Render's port
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    main()
