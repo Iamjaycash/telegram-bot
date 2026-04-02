@@ -1,4 +1,5 @@
 import os
+import asyncio
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import json
@@ -46,7 +47,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         code = users[user_id]["referral_code"]
-        await update.message.reply_text(f"Welcome back!\n\nYour referral code: `{code}`\nSend /earnings to see your points.", parse_mode="Markdown")
+        await update.message.reply_text(f"Welcome back!\n\nYour referral code: `{code}`", parse_mode="Markdown")
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
@@ -70,7 +71,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def earnings(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     if user_id in users:
-        points = users[user_id]["earnings"]
+        points = users[user_id].get("earnings", 0)
         code = users[user_id]["referral_code"]
         await update.message.reply_text(f"💰 Your points: {points}\n\nYour referral code: `{code}`", parse_mode="Markdown")
     else:
@@ -79,17 +80,18 @@ async def earnings(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     msg = update.message.text
-    print(f"\n📩 Message from {user_id}: {msg}\n")
+    print(f"Message from {user_id}: {msg}")
     await update.message.reply_text("✅ Message received. Admin will reply soon.")
 
-def main():
+async def main():
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("earnings", earnings))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
     print("🤖 Bot is running...")
-    app.run_polling()
+    await app.run_polling()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
